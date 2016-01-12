@@ -104,9 +104,11 @@ sub request {
         my $base_string = uc($method) . '&';
 
         # url part
+        # exclude ports 80 and 443
+        my $port = $uri->port;
+        $port = $port && ($port == 443 || $port == 80) ? '' : (':' . $port);
         $base_string .= _encode(
-            lc($uri->scheme . '://' . $uri->authority . $uri->path)
-            # lc($uri->scheme . '://' . $uri->authority . $uri->port . $uri->path)
+            lc($uri->scheme . '://' . $uri->authority . $port . $uri->path)
         ) . '&';
         
         # normalize parameters
@@ -147,8 +149,7 @@ sub request {
         $base_string .= _encode(join('&', @sorted_params));
 
         # compute digest
-        my $key = _encode($consumer_secret) . '&' .
-            _encode($token_secret);
+        my $key = _encode($consumer_secret) . '&' . _encode($token_secret);
         my $hmac = Digest::HMAC_SHA1->new($key);
         $hmac->add($base_string);
         $signature = $hmac->b64digest;
