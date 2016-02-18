@@ -55,12 +55,10 @@ sub new {
         furl => Furl::HTTP->new(%opts)
     }, $class;
 }
-
+ 
 sub request {
     my $self = shift;
     my %args = @_;
-
-    # TODO: accept HTTP::Request
 
     my $url        = $args{url};
     my $scheme     = $args{scheme};
@@ -94,85 +92,36 @@ sub request {
     }
     
     # build signature
-    my $signature = "";
-    my @query_form = $uri->query_form;
+    my $signature = undef;
 
     if ($signature_method eq 'HMAC-SHA1') {
-        # build signature base string
-
-        # method part
-        my $base_string = uc($method) . '&';
-
-        # url part
-        # exclude ports 80 and 443
-        my $port = $uri->port;
-        $port = $port && ($port == 443 || $port == 80) ? '' : (':' . $port);
-        $base_string .= _encode(
-            lc($uri->scheme . '://' . $uri->authority . $port . $uri->path)
-        ) . '&';
-        
-        # normalize parameters
-        my @sorted_params = ();
-        my %params = ();
-
-        # TODO: bring in params from application/x-www-form-urlencoded body parts 
-
-        # for the sake of sorting, construct a param mapping
-        for (my $i = 0; $i <= (@query_form - 1); $i += 2) {
-            my $k = _encode($query_form[$i]);
-            my $v = _encode($query_form[$i + 1]);
-
-            if (exists $params{$k}) {
-                push @{$params{$k}}, $v;
-            } else {
-                $params{$k} = [ $v ];
-            }
-        }
-
-        # add oauth parameters
-        $params{oauth_consumer_key}     = [ _encode($consumer_key) ];
-        $params{oauth_token}            = [ _encode($token) ];
-        $params{oauth_signature_method} = [ _encode($signature_method) ];
-        $params{oauth_timestamp}        = [ _encode($timestamp) ];
-        $params{oauth_nonce}            = [ _encode($nonce) ];
-
-        # sort params and join each key/value with a '='
-        foreach my $key (sort keys %params) {
-            my $vals = $params{$key};
-
-            # we have to sort the values in case of duplicate params (see RFC)
-            push @sorted_params, $key . '=' . $_
-                for (sort @$vals);
-        }
-
-        # add sorted encoded params
-        $base_string .= _encode(join('&', @sorted_params));
-
-        # compute digest
-        my $key = _encode($consumer_secret) . '&' . _encode($token_secret);
-        my $hmac = Digest::HMAC_SHA1->new($key);
-        $hmac->add($base_string);
-        $signature = $hmac->b64digest;
-
-        # pad signature
-        # https://metacpan.org/pod/Digest::SHA#PADDING-OF-BASE64-DIGESTS
-        $signature .= '=' while (length($signature) % 4);
+        $signature = $self->gen_sha1_sig(
+            method => $method, 
+            uri => $uri, 
+            content => $content,
+            consumer_key => $consumer_key,
+            consumer_secret => $consumer_secret,
+            token => $token,
+            token_secret => $token_secret,
+            timestamp => $timestamp,
+            nonce => $nonce,
+        );
     } elsif ($signature_method eq 'PLAINTEXT') {
         # TODO
+        # http://tools.ietf.org/html/rfc5849#section-3.4.4
     } else {
         die "Invalid signature method $signature_method";
     }
 
-    push @query_form, (
+    $uri->query_form([
+        $uri->query_form,
         oauth_consumer_key => $consumer_key,
         oauth_nonce => $nonce,
         oauth_signature_method => $signature_method,
         oauth_timestamp => $timestamp,
         oauth_token => $token,
         oauth_signature => $signature
-    );
-
-    $uri->query_form(\@query_form);
+    ]);
 
     return $self->{furl}->request(
         method => $method,
@@ -234,6 +183,82 @@ sub delete {
         url => $url,
         headers => $headers
     );
+}
+
+sub gen_sha1_sig {
+    my $self = shift;
+    my %args = @_;
+
+    my $method          = $args{method};
+    my $uri             = $args{uri};
+    my $content         = $args{content};
+    my $timestamp       = $args{timestamp};
+    my $nonce           = $args{nonce};
+    my $consumer_key    = $args{consumer_key};
+    my $consumer_secret = $args{consumer_secret};
+    my $token           = $args{token};
+    my $token_secret    = $args{token_secret};
+
+    # TODO: process $content
+    
+    # method part
+    my $base_string = uc($method) . '&';
+    
+    # url part
+    # exclude ports 80 and 443
+    my $port = $uri->port;
+    $port = $port && ($port == 443 || $port == 80) ? '' : (':' . $port);
+    $base_string .= _encode(
+        lc($uri->scheme . '://' . $uri->authority . $port . $uri->path)
+    ) . '&';
+    
+    # normalize parameters
+    my @query_form = $uri->query_form;
+    my @sorted_params = ();
+    my %params = ();
+    
+    # for the sake of sorting, construct a param mapping
+    for (my $i = 0; $i <= (@query_form - 1); $i += 2) {
+        my $k = _encode($query_form[$i]);
+        my $v = _encode($query_form[$i + 1]);
+        
+        if (exists $params{$k}) {
+            push @{$params{$k}}, $v;
+        } else {
+            $params{$k} = [ $v ];
+        }
+    }
+    
+    # add oauth parameters
+    $params{oauth_consumer_key}     = [ _encode($consumer_key) ];
+    $params{oauth_token}            = [ _encode($token) ];
+    $params{oauth_signature_method} = [ _encode('HMAC-SHA1') ];
+    $params{oauth_timestamp}        = [ _encode($timestamp) ];
+    $params{oauth_nonce}            = [ _encode($nonce) ];
+    
+    # sort params and join each key/value with a '='
+    foreach my $key (sort keys %params) {
+        my $vals = $params{$key};
+        
+        # we have to sort the values in case of duplicate params (see RFC)
+        push @sorted_params, $key . '=' . $_
+            for (sort @$vals);
+    }
+    
+    # add sorted encoded params
+    $base_string .= _encode(join('&', @sorted_params));
+    
+    # compute digest
+    my $key = _encode($consumer_secret) . '&' . _encode($token_secret);
+    my $hmac = Digest::HMAC_SHA1->new($key);
+    $hmac->add($base_string);
+    my $signature = $hmac->b64digest;
+    
+    # pad signature
+    # https://metacpan.org/pod/Digest::SHA#PADDING-OF-BASE64-DIGESTS
+    $signature .= '=' while (length($signature) % 4);
+
+    return $signature;
 }
 
 sub _encode {
