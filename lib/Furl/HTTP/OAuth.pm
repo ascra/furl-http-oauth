@@ -107,8 +107,10 @@ sub request {
             nonce => $nonce,
         );
     } elsif ($signature_method eq 'PLAINTEXT') {
-        # TODO
-        # http://tools.ietf.org/html/rfc5849#section-3.4.4
+        $signature = $self->gen_plain_sig(
+            consumer_secret => $consumer_secret,
+            token_secret => $token_secret
+        );
     } else {
         die "Invalid signature method $signature_method";
     }
@@ -255,10 +257,19 @@ sub gen_sha1_sig {
     my $signature = $hmac->b64digest;
     
     # pad signature
-    # https://metacpan.org/pod/Digest::SHA#PADDING-OF-BASE64-DIGESTS
     $signature .= '=' while (length($signature) % 4);
 
     return $signature;
+}
+
+sub gen_plain_sig {
+    my $self = shift;
+    my %args = @_;
+
+    my $consumer_secret = $args{consumer_secret} || '';
+    my $token_secret    = $args{token_secret} || '';
+
+    return _encode($consumer_secret) . '&' . _encode($token_secret)
 }
 
 sub _encode {
