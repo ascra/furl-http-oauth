@@ -7,8 +7,7 @@ use URI::Escape;
 use Furl::HTTP;
 use Digest::HMAC_SHA1;
 
-# make OAuth 1.0 authorized requests with Furl
-# http://tools.ietf.org/html/rfc5849
+# ABSTRACT: Make OAuth 1.0 signed requests with Furl (http://tools.ietf.org/html/rfc5849)
 
 sub new {
     my $class = shift;
@@ -71,13 +70,13 @@ sub request {
     my $write_file = $args{write_file};
     my $write_code = $args{write_code};
 
-    my $consumer_key     = $self->{consumer_key};
-    my $consumer_secret  = $self->{consumer_secret};
-    my $token            = $self->{token};
-    my $token_secret     = $self->{token_secret};
-    my $signature_method = $self->{signature_method};
-    my $timestamp        = &{$self->{timestamp}};
-    my $nonce            = &{$self->{nonce}};
+    my $consumer_key     = $self->consumer_key;
+    my $consumer_secret  = $self->consumer_secret;
+    my $token            = $self->token;
+    my $token_secret     = $self->token_secret;
+    my $signature_method = $self->signature_method;
+    my $timestamp        = &{$self->timestamp};
+    my $nonce            = &{$self->nonce};
     my $uri              = undef;
 
     # parse url
@@ -125,7 +124,7 @@ sub request {
         oauth_signature => $signature
     ]);
 
-    return $self->{furl}->request(
+    return $self->furl->request(
         method => $method,
         url => $uri->as_string,
         content => $content,
@@ -273,7 +272,47 @@ sub gen_plain_sig {
 }
 
 sub _encode {
-    return URI::Escape::uri_escape(shift, '^\w.~-');
+    return URI::Escape::uri_escape($_[0], '^\w.~-');
+}
+
+sub consumer_key {
+    return $_[0]->{consumer_key} = 
+        (@_ == 2 ? $_[1] : $_[0]->{consumer_key});
+}
+
+sub consumer_secret {
+    return $_->[0]->{consumer_secret} = 
+        (@_ == 2 ? $_[1] : $_[0]->{consumer_secret});
+}
+
+sub signature_method {
+    return $_->[0]->{signature_method} = 
+        (@_ == 2 ? $_[1] : $_[0]->{signature_method});
+}
+
+sub token {
+    return $_->[0]->{token} = 
+        (@_ == 2 ? $_[1] : $_[0]->{token});
+}
+
+sub token_secret {
+    return $_->[0]->{token_secret} = 
+        (@_ == 2 ? $_[1] : $_[0]->{token_secret});
+}
+
+sub nonce {
+    return $_->[0]->{nonce} = 
+        (@_ == 2 ? $_[1] : $_[0]->{nonce});
+}
+
+sub timestamp {
+    return $_->[0]->{timestamp} = 
+        (@_ == 2 ? $_[1] : $_[0]->{timestamp});
+}
+
+sub furl {
+    return $_->[0]->{furl} = 
+        (@_ == 2 ? $_[1] : $_[0]->{furl});
 }
 
 1;
