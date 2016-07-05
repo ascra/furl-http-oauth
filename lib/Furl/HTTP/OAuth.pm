@@ -249,11 +249,13 @@ sub gen_sha1_sig {
     
     # sort params and join each key/value with a '='
     foreach my $key (sort keys %params) {
-        my $vals = $params{$key};
-        
-        # we have to sort the values in case of duplicate params (see RFC)
+        my @vals = @{$params{$key}};
+
+        # if there's more than one value for the param, sort (see RFC)
+        @vals = sort @vals if (@vals > 1);
+
         push @sorted_params, $key . '=' . $_
-            for (sort @$vals);
+            for (@vals);
     }
     
     # add sorted encoded params
