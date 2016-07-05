@@ -69,12 +69,13 @@ sub request {
     my $headers    = $args{headers};
     my $write_file = $args{write_file};
     my $write_code = $args{write_code};
+    my $signature  = $args{signature};
 
     my $consumer_key     = $self->consumer_key;
     my $consumer_secret  = $self->consumer_secret;
     my $token            = $self->token;
     my $token_secret     = $self->token_secret;
-    my $signature_method = $self->signature_method;
+    my $signature_method = $self->signature_method || '';
     my $timestamp        = &{$self->timestamp};
     my $nonce            = &{$self->nonce};
     my $uri              = undef;
@@ -91,27 +92,25 @@ sub request {
     }
     
     # build signature
-    my $signature = undef;
-
-    if ($signature_method eq 'HMAC-SHA1') {
-        $signature = $self->gen_sha1_sig(
-            method => $method, 
-            uri => $uri, 
-            content => $content,
-            consumer_key => $consumer_key,
-            consumer_secret => $consumer_secret,
-            token => $token,
-            token_secret => $token_secret,
-            timestamp => $timestamp,
-            nonce => $nonce,
-        );
-    } elsif ($signature_method eq 'PLAINTEXT') {
-        $signature = $self->gen_plain_sig(
-            consumer_secret => $consumer_secret,
-            token_secret => $token_secret
-        );
-    } else {
-        die "Invalid signature method $signature_method";
+    if (! $signature) {
+        if (lc $signature_method eq 'plaintext') {
+            $signature = $self->gen_plain_sig(
+                consumer_secret => $consumer_secret,
+                token_secret => $token_secret
+            );
+        } else {
+            $signature = $self->gen_sha1_sig(
+                method => $method, 
+                uri => $uri, 
+                content => $content,
+                consumer_key => $consumer_key,
+                consumer_secret => $consumer_secret,
+                token => $token,
+                token_secret => $token_secret,
+                timestamp => $timestamp,
+                nonce => $nonce,
+            );
+        }
     }
 
     $uri->query_form([
