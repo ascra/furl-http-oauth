@@ -266,7 +266,7 @@ sub gen_sha1_sig {
     my $signature = $hmac->b64digest;
     
     # pad signature
-    $signature .= '=' while (length($signature) % 4);
+    $signature .= '=' x (4 - (length($signature) % 4));
 
     return $signature;
 }
