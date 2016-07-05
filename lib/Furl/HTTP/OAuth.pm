@@ -7,6 +7,10 @@ use URI::Escape;
 use Furl::HTTP;
 use Digest::HMAC_SHA1;
 
+# well-formed oauth_signature_method values
+use constant HMAC_METHOD => 'HMAC-SHA1';
+use constant PTEXT_METHOD => 'PLAINTEXT';
+
 # ABSTRACT: Make OAuth 1.0 signed requests with Furl (http://tools.ietf.org/html/rfc5849)
 
 sub new {
@@ -93,12 +97,14 @@ sub request {
     
     # build signature
     if (! $signature) {
-        if (lc $signature_method eq 'plaintext') {
+        if (uc $signature_method eq PTEXT_METHOD) {
+            $signature_method = PTEXT_METHOD;
             $signature = $self->gen_plain_sig(
                 consumer_secret => $consumer_secret,
                 token_secret => $token_secret
             );
         } else {
+            $signature_method = HMAC_METHOD;
             $signature = $self->gen_sha1_sig(
                 method => $method, 
                 uri => $uri, 
@@ -232,7 +238,7 @@ sub gen_sha1_sig {
     # add oauth parameters
     $params{oauth_consumer_key}     = [ _encode($consumer_key) ];
     $params{oauth_token}            = [ _encode($token) ];
-    $params{oauth_signature_method} = [ _encode('HMAC-SHA1') ];
+    $params{oauth_signature_method} = [ _encode(HMAC_METHOD) ];
     $params{oauth_timestamp}        = [ _encode($timestamp) ];
     $params{oauth_nonce}            = [ _encode($nonce) ];
     
