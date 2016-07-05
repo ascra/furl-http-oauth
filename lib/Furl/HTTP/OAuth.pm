@@ -6,6 +6,7 @@ use URI;
 use URI::Escape;
 use Furl::HTTP;
 use Digest::HMAC_SHA1;
+use Scalar::Util;
 
 # well-formed oauth_signature_method values
 use constant HMAC_METHOD => 'HMAC-SHA1';
@@ -84,7 +85,6 @@ sub request {
     my $nonce            = &{$self->nonce};
     my $uri              = undef;
 
-    # parse url
     if ($url) {
         $uri = URI->new($url);
     } else {
@@ -204,8 +204,6 @@ sub gen_sha1_sig {
     my $consumer_secret = $args{consumer_secret};
     my $token           = $args{token};
     my $token_secret    = $args{token_secret};
-
-    # TODO: process $content
     
     # method part
     my $base_string = uc($method) . '&';
@@ -218,10 +216,17 @@ sub gen_sha1_sig {
         lc($uri->scheme . '://' . $uri->authority . $port . $uri->path)
     ) . '&';
     
-    # normalize parameters
     my @query_form = $uri->query_form;
     my @sorted_params = ();
     my %params = ();
+
+    # handle parameters in $content (hashref or arrayref supported)
+    my $c_reftype = ref $content;
+    if ($content && $c_reftype && ! _is_real_fh($content) && 
+        (($c_reftype eq 'HASH') || $c_reftype eq 'ARRAY')) {
+        @query_form = $c_reftype eq 'HASH' ? (@query_form, %$content) :
+            (@query_form, @$content);
+    }
     
     # for the sake of sorting, construct a param mapping
     for (my $i = 0; $i <= (@query_form - 1); $i += 2) {
@@ -278,6 +283,26 @@ sub gen_plain_sig {
 
 sub _encode {
     return URI::Escape::uri_escape($_[0], '^\w.~-');
+}
+
+# stolen from Plack::Util::is_real_fh
+sub _is_real_fh {
+    my $fh = shift;
+
+    my $reftype = Scalar::Util::reftype($fh) or return;
+    if( $reftype eq 'IO'
+        or $reftype eq 'GLOB' && *{$fh}{IO} ){
+        my $m_fileno = $fh->fileno;
+        return unless defined $m_fileno;
+        return unless $m_fileno >= 0;
+        my $f_fileno = fileno($fh);
+        return unless defined $f_fileno;
+        return unless $f_fileno >= 0;
+        return 1;
+    }
+    else {
+        return;
+    }
 }
 
 sub consumer_key {
