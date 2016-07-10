@@ -70,10 +70,6 @@ See L<Furl>'s put method
 
 See L<Furl>'s delete method
 
-=head3 gen_sha1_sig
-
-=head3 gen_plain_sig
-
 =head1 ATTRIBUTES
 
 =head3 consumer_key (String)
@@ -297,7 +293,7 @@ sub delete {
     );
 }
 
-sub gen_sha1_sig {
+sub _gen_sha1_sig {
     my $self = shift;
     my %args = @_;
 
@@ -379,7 +375,7 @@ sub gen_sha1_sig {
     return $signature;
 }
 
-sub gen_plain_sig {
+sub _gen_plain_sig {
     my $self = shift;
     my %args = @_;
 

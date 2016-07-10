@@ -27,25 +27,25 @@ sub test_sha1_sig {
         nonce => &{$furl->nonce}
     );
 
-    my $orig_sig = $furl->gen_sha1_sig(%args);
+    my $orig_sig = $furl->_gen_sha1_sig(%args);
 
     # test same parameters
     ok($orig_sig, 'Generated orig sig');
-    is($orig_sig, $furl->gen_sha1_sig(%args), 'Same timestamp and nonce -> same sig');
+    is($orig_sig, $furl->_gen_sha1_sig(%args), 'Same timestamp and nonce -> same sig');
 
     # change uri param
     $uri->query_form({ 'q' => 'Bar' });
-    isnt($orig_sig, $furl->gen_sha1_sig(%args), 'Diff query -> diff sig');
+    isnt($orig_sig, $furl->_gen_sha1_sig(%args), 'Diff query -> diff sig');
 
     # change timestamp
     $uri->query_form({ 'q' => 'Foo' });
     $args{timestamp} += 1;
-    isnt($orig_sig, $furl->gen_sha1_sig(%args), 'Diff timestamp -> diff sig');
+    isnt($orig_sig, $furl->_gen_sha1_sig(%args), 'Diff timestamp -> diff sig');
 
     # change nonce
     $args{timestamp} -= 1;
     $args{nonce} .= 'a';
-    isnt($orig_sig, $furl->gen_sha1_sig(%args), 'Diff nonce -> diff sig');
+    isnt($orig_sig, $furl->_gen_sha1_sig(%args), 'Diff nonce -> diff sig');
 }
 
 sub test_plain_sig {
