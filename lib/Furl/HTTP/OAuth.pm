@@ -12,7 +12,113 @@ use Scalar::Util;
 use constant HMAC_METHOD => 'HMAC-SHA1';
 use constant PTEXT_METHOD => 'PLAINTEXT';
 
-# ABSTRACT: Make OAuth 1.0 signed requests with Furl (http://tools.ietf.org/html/rfc5849)
+=encoding utf8
+
+=head1 NAME
+
+Furl::HTTP::OAuth - Make OAuth 1.0 signed requests with Furl
+
+=head1 SYNOPSIS
+
+    my $client = Furl::HTTP::OAuth->new(
+        consumer_key => '<your consumer key>',
+        consumer_secret => '<your consumer secret>',
+        token => '<your token>',
+        token_secret => '<your token secret>',
+        signature_method => 'HMAC-SHA1', # the default
+
+        # accepts all Furl::HTTP->new options
+        agent => 'MyAgent/1.0',
+        timeout => 5
+    );
+
+    my ($version, $code, $msg, $headers, $body) = $client->get('http://test.com');
+    ($version, $code, $msg, $headers, $body) = $client->put('http://test.com');
+    ($version, $code, $msg, $headers, $body) = $client->post('http://test.com');
+    
+    # OR...
+
+    ($version, $code, $msg, $headers, $body) = $client->request(
+        # accepts all Furl::HTTP::request options        
+        method => 'GET',
+        url => 'http://test.com',
+    );
+
+=head1 DESCRIPTION
+
+The goal of this module is to provide a simple interface for quickly signing and sending HTTP requests using OAuth 1.0 and Furl. You should be at least somewhat familiar with OAuth 1.0 and Furl before you use this module.
+
+=head1 METHODS
+
+=head3 request
+
+See L<Furl>'s request method
+
+=head3 get
+
+See L<Furl>'s get method
+
+=head3 post
+
+See L<Furl>'s post method
+
+=head3 put
+
+See L<Furl>'s put method
+
+=head3 delete
+
+See L<Furl>'s delete method
+
+=head3 gen_sha1_sig
+
+=head3 gen_plain_sig
+
+=head1 ATTRIBUTES
+
+=head3 consumer_key (String)
+
+Your OAuth consumer key
+
+=head3 consumer_secret (String)
+
+Your OAuth consumer secret
+
+=head3 token (String)
+
+Your OAuth token
+
+=head3 token_secret (String)
+
+Your OAuth token secret
+
+=head3 signature_method (String)
+
+Either 'HMAC-SHA1' (default) or 'PLAINTEXT'
+
+=head3 nonce (Subref)
+
+The default is a subref that returns an eight character string of random letters
+
+=head3 timestamp (Subref)
+
+The default is a subref that returns time()
+
+=head3 furl (Furl::HTTP)
+
+Underlying L<Furl::HTTP> object. Feel free to supply your own.
+
+=head1 SEE ALSO
+
+L<Furl::HTTP>, L<OAuth RFC|http://tools.ietf.org/html/rfc5849>
+
+=head1 LICENSE
+
+(c) 2016 ascra
+
+This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
+=cut
 
 sub new {
     my $class = shift;
