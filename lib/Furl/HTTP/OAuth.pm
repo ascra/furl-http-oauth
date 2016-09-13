@@ -46,7 +46,7 @@ Furl::HTTP::OAuth - Make OAuth 1.0 signed requests with Furl
 
 =head1 DESCRIPTION
 
-The goal of this module is to provide a simple interface for quickly signing and sending HTTP requests using OAuth 1.0 and Furl. You should be at least somewhat familiar with OAuth 1.0 and Furl before you use this module.
+The goal of this module is to provide a simple interface for quickly signing and sending HTTP requests using OAuth 1.0 and Furl. You should be at least somewhat familiar with OAuth 1.0 and Furl before using this module.
 
 =head1 METHODS
 
@@ -92,17 +92,17 @@ Your OAuth token secret
 
 Either 'HMAC-SHA1' (default) or 'PLAINTEXT'
 
-=head3 nonce (Subref)
+=head3 nonce (Coderef)
 
-The default is a subref that returns an eight character string of random letters
+The default is a coderef which returns an eight character string of random letters
 
-=head3 timestamp (Subref)
+=head3 timestamp (Coderef)
 
-The default is a subref that returns time()
+The default is a coderef which returns time()
 
 =head3 furl (Furl::HTTP)
 
-Underlying L<Furl::HTTP> object. Feel free to supply your own.
+Underlying L<Furl::HTTP> object. Feel free to use your own.
 
 =head1 SEE ALSO
 
