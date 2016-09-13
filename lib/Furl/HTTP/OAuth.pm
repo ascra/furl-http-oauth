@@ -106,7 +106,7 @@ Underlying L<Furl::HTTP> object. Feel free to use your own.
 
 =head1 SEE ALSO
 
-L<Furl::HTTP>, L<OAuth RFC|http://tools.ietf.org/html/rfc5849>
+L<Furl::HTTP>, L<OAuth RFC|http://tools.ietf.org/html/rfc5849>, L<https://hueniverse.com/oauth/guide/workflow/>
 
 =head1 LICENSE
 
